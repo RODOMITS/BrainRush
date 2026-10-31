@@ -4,7 +4,7 @@ function currencyTextMatches(text){return [...text.matchAll(/(^|[^\p{L}\p{N}_])(
 (()=>{
  if(!document.createTreeWalker)return;
  document.documentElement.classList.add('currency-enabled');
- const skip='script,style,svg,pre,code,textarea,input,select,option,[contenteditable],.currency-value,.currency-word,.currency-unit,.coin';
+ const skip='script,style,svg,pre,code,textarea,input,select,option,[contenteditable],.currency-value,.currency-word,.currency-unit,.coin,#crashMult,#crashSideMult,#crashReturn,.timer,[data-free-case-timer]';
  function makeIcon(){const img=document.createElement('img');img.className='currency-icon';img.src=CURRENCY_SRC;img.width=20;img.height=20;img.alt='';img.setAttribute('aria-hidden','true');return img;}
  function decorate(root){
   if(!root?.isConnected)return;

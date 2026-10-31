@@ -1,4 +1,7 @@
 import http from 'node:http';
+import {gzipSync} from 'node:zlib';
+import {createFairness} from './fairness.js';
+import {createStats} from './stats.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -14,6 +17,7 @@ if(!dev&&!token)throw new Error('Укажи BOT_TOKEN в переменных о
 const store=openStore(process.env.DATABASE_PATH||'./data/brainrot.db');
 async function telegram(method,body){check(token,'Telegram не подключён');const response=await fetch(`https://api.telegram.org/bot${token}/${method}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(method==='getUpdates'?35000:12000)});const data=await response.json();check(data.ok,data.description||'Ошибка Telegram');return data.result;}
 const e=createEngine(store,{telegram}),{get,all,run,tx,set,setting}=store;
+const fairness=createFairness(store,e),stats=createStats(store),bootId=randomUUID(),avatarCache=new Map(),staticCache=new Map();
 const routes={
  '/api/sell':e.sell,'/api/buy':e.buy,'/api/exchange':e.exchange,'/api/case':e.openCase,'/api/upgrade':e.upgrade,'/api/dice':e.dice,
  '/api/mines/start':e.mineStart,'/api/mines/action':e.mineAction,'/api/crash/start':e.crashStart,'/api/crash/cashout':e.crashCashout,
@@ -24,21 +28,11 @@ const routes={
 const rates=new Map();
 function rate(key,max){const t=Date.now(),v=rates.get(key);if(!v||v.until<t){rates.set(key,{count:1,until:t+60000});return;}check(++v.count<=max,'Слишком много запросов, подожди минуту');}
 setInterval(()=>{const t=Date.now();for(const [k,v] of rates)if(v.until<t)rates.delete(k);},60000).unref();
-function json(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));}
+function json(res,status,data){res.statusCode=status;res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');const body=JSON.stringify(data);if(body.length>2048&&res.req?.headers['accept-encoding']?.includes('gzip')){res.setHeader('Content-Encoding','gzip');res.setHeader('Vary','Accept-Encoding');res.end(gzipSync(body,{level:3}));}else res.end(body);}
 async function readBody(req){let raw='';for await(const part of req){raw+=part;check(Buffer.byteLength(raw)<=65536,'Слишком большой запрос');}return raw?JSON.parse(raw):{};}
 function authenticated(req){const raw=req.headers.authorization?.replace(/^tma /,'');if(dev&&req.headers['x-dev-user']){const id=Number(req.headers['x-dev-user']);integer(id);return {id,first_name:id===adminId?'Владелец (локально)':'Игрок (локально)',last_name:'@Brainrot_Rush_bot'};}return validateInitData(raw,token);}
 
-function userSummary(id){
- const counts=Object.fromEntries(all('SELECT kind,COUNT(*) n FROM games WHERE user_id=? GROUP BY kind',id).map(r=>[r.kind,r.n]));
- counts.case=get("SELECT COALESCE(SUM(json_array_length(json_extract(state,'$.prizes'))),0) n FROM games WHERE user_id=? AND kind='case'",id).n;
- const drops=[];
- for(const g of all('SELECT state,kind,closed FROM games WHERE user_id=? AND closed IS NOT NULL ORDER BY closed DESC LIMIT 1000',id)){
-  const data=JSON.parse(g.state),prizes=data.prizes||[data.prize].filter(Boolean);
-  for(const p of prizes){const item=p.item_id?get('SELECT * FROM items WHERE id=?',p.item_id):null;drops.push({id:g.closed+':'+drops.length,item:item?.id||null,name:item?.name||String((p.coin||0)/100)+' монет',source:{case:'Кейс',upgrade:'Апгрейд',dice:'Дайсы'}[g.kind]||g.kind,quantity:1,value:(item?.price||p.coin||0)/100,at:g.closed});}
- }
- const withdrawnValue=get("SELECT COALESCE(SUM(i.price),0) n FROM inventory v JOIN items i ON i.id=v.item_id WHERE v.user_id=? AND v.status='withdrawn'",id).n;
- return {counts,drops,withdrawnValue};
-}
+function userSummary(id){return {...stats.personal(id),global:stats.global(),proofs:fairness.proofs(id)};}
 
 const server=http.createServer(async(req,res)=>{
  res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');
@@ -50,14 +44,22 @@ const server=http.createServer(async(req,res)=>{
    rate('ip:'+req.socket.remoteAddress,600);
    const tg=authenticated(req);rate('user:'+tg.id,240);e.login(tg);const admin=tg.id===adminId;
    if(p.startsWith('/api/admin/'))check(admin,'Доступ только владельцу');
-   if(req.method==='GET'&&p==='/api/state'){json(res,200,{...tx(()=>({...e.snapshot(tg.id),...userSummary(tg.id)})),admin});return;}
-   if(req.method==='GET'&&p==='/api/admin/state'){json(res,200,tx(()=>({...e.adminSnapshot(),invoices:all('SELECT * FROM invoices ORDER BY created DESC LIMIT 200')})));return;}
+   if(req.method==='GET'&&p==='/api/state'){
+    const response=tx(()=>{e.tick();const revision=bootId+':'+get('SELECT total_changes() n').n+':'+Math.floor(Date.now()/60000);if(url.searchParams.get('revision')===revision)return {unchanged:true,serverTime:Date.now()};return {...e.snapshot(tg.id),...userSummary(tg.id),admin,revision};});json(res,200,response);return;
+   }
+   if(req.method==='GET'&&p==='/api/avatar'){
+    let cached=avatarCache.get(tg.id);if(!cached||cached.until<Date.now()){
+     check(token,'Фото недоступно в локальном режиме');const photos=await telegram('getUserProfilePhotos',{user_id:tg.id,limit:1});check(photos.photos?.length,'Фото профиля не установлено');const photo=photos.photos[0],file=await telegram('getFile',{file_id:photo[Math.min(1,photo.length-1)].file_id});check(file.file_path,'Фото не найдено');const r=await fetch('https://api.telegram.org/file/bot'+token+'/'+file.file_path,{signal:AbortSignal.timeout(10000)});check(r.ok,'Фото недоступно');cached={bytes:Buffer.from(await r.arrayBuffer()),type:r.headers.get('content-type')||'image/jpeg',until:Date.now()+3600000};avatarCache.set(tg.id,cached);
+    }res.writeHead(200,{'Content-Type':cached.type,'Cache-Control':'private,max-age=3600'});res.end(cached.bytes);return;
+   }
+   if(req.method==='GET'&&p==='/api/admin/state'){json(res,200,tx(()=>({...e.adminSnapshot(),inventory:all("SELECT id,item_id,user_id FROM inventory WHERE status='reserved'"),invoices:all('SELECT * FROM invoices ORDER BY created DESC LIMIT 200')})));return;}
    check(req.method==='POST','Метод не поддерживается');
    const body=await readBody(req),key=req.headers['idempotency-key'];
    check(typeof key==='string'&&/^[a-zA-Z0-9-]{8,100}$/.test(key),'Нужен ключ запроса');
    const signature=createHash('sha256').update(p+JSON.stringify(body)).digest('hex');
    const cached=get('SELECT * FROM requests WHERE user_id=? AND key=?',tg.id,key);
    if(cached){check(cached.path===signature,'Ключ уже использован для другой операции');json(res,200,JSON.parse(cached.response));return;}
+   if(p==='/api/fairness/commit'){const result=tx(()=>fairness.commit(tg.id,body.clientSeed));json(res,200,result);return;}
    if(p==='/api/case'){const c=get('SELECT data FROM cases WHERE id=?',body.caseId);check(c,'Кейс не найден');await e.freeCheck(tg.id,JSON.parse(c.data),tg);}
    if(p==='/api/admin/refund'){
     const invoice=get('SELECT * FROM invoices WHERE id=?',body.id);check(invoice&&['paid','refund_pending'].includes(invoice.status),'Платёж не найден или уже возвращён');
@@ -72,12 +74,16 @@ const server=http.createServer(async(req,res)=>{
     const response={link};run('INSERT INTO requests VALUES(?,?,?,?,?)',tg.id,key,signature,JSON.stringify(response),Date.now());json(res,200,response);return;
    }
    const handler=routes[p];check(handler,'Операция не найдена');
-   const response=tx(()=>{check(!get('SELECT blocked FROM users WHERE id=?',tg.id).blocked,'Аккаунт заблокирован');e.tick();const value=handler(tg.id,body);run('INSERT INTO requests VALUES(?,?,?,?,?)',tg.id,key,signature,JSON.stringify(value),Date.now());return value;});json(res,200,response);return;
+   const response=tx(()=>{check(!get('SELECT blocked FROM users WHERE id=?',tg.id).blocked,'Аккаунт заблокирован');e.tick();const value=fairness.execute(tg.id,p,body,()=>handler(tg.id,body));run('INSERT INTO requests VALUES(?,?,?,?,?)',tg.id,key,signature,JSON.stringify(value),Date.now());return value;});json(res,200,response);return;
   }
   check(req.method==='GET'||req.method==='HEAD','Метод не поддерживается');
   const file=path.resolve(root,'.'+decodeURIComponent(p==='/'?'/index.html':p));check(file.startsWith(root+path.sep),'Недоступный путь');
   const stat=fs.statSync(file);check(stat.isFile(),'Файл не найден');
   const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.webp':'image/webp','.png':'image/png','.svg':'image/svg+xml','.ico':'image/x-icon'};
+  if(/\.(html|js|css|svg)$/.test(file)&&req.headers['accept-encoding']?.includes('gzip')){
+   let packed=staticCache.get(file);if(!packed||packed.modified!==stat.mtimeMs){packed={modified:stat.mtimeMs,bytes:gzipSync(fs.readFileSync(file),{level:6})};staticCache.set(file,packed);}
+   res.writeHead(200,{'Content-Type':types[path.extname(file)],'Content-Encoding':'gzip','Vary':'Accept-Encoding','Cache-Control':p.startsWith('/images/')?'public,max-age=86400':'no-cache'});res.end(req.method==='HEAD'?undefined:packed.bytes);return;
+  }
   res.writeHead(200,{'Content-Type':types[path.extname(file)]||'application/octet-stream','Cache-Control':p.startsWith('/images/')?'public,max-age=86400':'no-cache'});if(req.method==='HEAD')res.end();else fs.createReadStream(file).pipe(res);
  }catch(err){json(res,err.code==='ENOENT'?404:400,{error:err.code==='ENOENT'?'Файл не найден':err.message?.includes('UNIQUE constraint')?'Операция уже выполнена или код занят':err.message||'Ошибка сервера'});}
 });
