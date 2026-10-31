@@ -1,0 +1,1 @@
+{"name":"brainrot-rush","version":"1.0.0","private":true,"type":"module","engines":{"node":">=24.0.0"},"scripts":{"start":"node --env-file-if-exists=.env server/index.js","test":"node --test test/*.test.js","audit:economy":"node server/economy-report.js"}}
