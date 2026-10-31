@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {createGiveaway} from './giveaway.js';
 import {createMaintenance} from './maintenance.js';
 import {gzipSync} from 'node:zlib';
 import {createFairness} from './fairness.js';
@@ -18,9 +19,10 @@ if(!dev&&!token)throw new Error('Укажи BOT_TOKEN в переменных о
 const store=openStore(process.env.DATABASE_PATH||'./data/brainrot.db');
 async function telegram(method,body){check(token,'Telegram не подключён');const response=await fetch(`https://api.telegram.org/bot${token}/${method}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(method==='getUpdates'?35000:12000)});const data=await response.json();check(data.ok,data.description||'Ошибка Telegram');return data.result;}
 const e=createEngine(store,{telegram}),{get,all,run,tx,set,setting}=store;
-const maintenance=createMaintenance(store);
+const maintenance=createMaintenance(store),giveaways=createGiveaway(store,e);
 const fairness=createFairness(store,e),stats=createStats(store),bootId=randomUUID(),avatarCache=new Map(),staticCache=new Map();
 const routes={
+ '/api/giveaway/join':giveaways.join,
  '/api/sell':e.sell,'/api/buy':e.buy,'/api/exchange':e.exchange,'/api/case':e.openCase,'/api/upgrade':e.upgrade,'/api/dice':e.dice,
  '/api/mines/start':e.mineStart,'/api/mines/action':e.mineAction,'/api/crash/start':e.crashStart,'/api/crash/cashout':e.crashCashout,
  '/api/deposit/queue':e.joinDeposit,'/api/withdraw':e.withdraw,'/api/withdraw/ready':e.withdrawalReady,'/api/withdraw/cancel':e.cancelWithdrawal,
@@ -47,7 +49,7 @@ const server=http.createServer(async(req,res)=>{
    const tg=authenticated(req);rate('user:'+tg.id,240);e.login(tg);const admin=tg.id===adminId;
    if(p.startsWith('/api/admin/'))check(admin,'Доступ только владельцу');
    if(req.method==='GET'&&p==='/api/state'){
-    const response=tx(()=>{e.tick();const revision=bootId+':'+get('SELECT total_changes() n').n+':'+Math.floor(Date.now()/60000);if(url.searchParams.get('revision')===revision)return {unchanged:true,serverTime:Date.now()};return {...e.snapshot(tg.id),...userSummary(tg.id),maintenance:maintenance.read(),admin,revision};});json(res,200,response);return;
+    const response=tx(()=>{e.tick();giveaways.tick();const revision=bootId+':'+get('SELECT total_changes() n').n+':'+Math.floor(Date.now()/60000);if(url.searchParams.get('revision')===revision)return {unchanged:true,serverTime:Date.now()};return {...e.snapshot(tg.id),...userSummary(tg.id),giveaway:giveaways.snapshot(tg.id),maintenance:maintenance.read(),admin,revision};});json(res,200,response);return;
    }
    if(req.method==='GET'&&p==='/api/avatar'){
     let cached=avatarCache.get(tg.id);if(!cached||cached.until<Date.now()){
@@ -92,7 +94,7 @@ const server=http.createServer(async(req,res)=>{
  }catch(err){json(res,err.code==='ENOENT'?404:400,{error:err.code==='ENOENT'?'Файл не найден':err.message?.includes('UNIQUE constraint')?'Операция уже выполнена или код занят':err.message||'Ошибка сервера'});}
 });
 server.listen(port,dev?'127.0.0.1':'0.0.0.0',()=>console.log(`Brainrot Rush: порт ${port}${dev?' (локальный режим)':''}`));
-setInterval(()=>{try{tx(()=>e.tick());}catch(err){console.error('Scheduler:',err.message);}},1000).unref();
+setInterval(()=>{try{tx(()=>{e.tick();giveaways.tick();});}catch(err){console.error('Scheduler:',err.message);}},1000).unref();
 let stopped=false;
 async function onUpdate(u){
  if(u.pre_checkout_query){const q=u.pre_checkout_query,i=get('SELECT * FROM invoices WHERE id=?',q.invoice_payload),ok=!maintenance.read().enabled&&!!i&&i.status==='pending'&&i.user_id===q.from.id&&i.stars===q.total_amount&&q.currency==='XTR';await telegram('answerPreCheckoutQuery',{pre_checkout_query_id:q.id,ok,...(!ok?{error_message:'Счёт недоступен. Создай новый в приложении.'}:{})});}
