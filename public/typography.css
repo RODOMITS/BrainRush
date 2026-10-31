@@ -1,0 +1,17 @@
+/* Montserrat Bold for UI; Black for headings and headline figures. */
+html body,body button,body input,body select,body textarea{font-family:'Montserrat','Segoe UI',sans-serif;font-weight:700;font-synthesis:none}
+body :is(p,span,a,label,small,td,th,strong,b,.btn,.chip,.nav-item,.pet-name,.drop-info>strong,.drop-info>span,.subtle,.muted-small,.tiny-neutral,.label){font-weight:700}
+body :is(h1,h2,h3,h4,h5,h6,.page-title,.header-logo strong,.brand,.case-card h3,.profile-head h1),body .upgrade-console .upgrade-ring .ring-content strong{font-family:'Montserrat','Segoe UI',sans-serif;font-weight:900;letter-spacing:-.035em}
+body :is(.stat-card>strong,.site-stats-grid strong,.profile-balance strong,.ref-big,.home-dashboard .home-best .drop-info>span){font-weight:900;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+body .upgrade-console .quick-chances .chip,body .upgrade-console #upgradeGo{font-weight:700}
+body .home-dashboard .home-best h3,body .home-dashboard .home-recent h3,body .home-dashboard .promo-banner-label h2{font-weight:900}
+body :is(.nav-item,.btn,.chip){line-height:1.35}
+body :is(.pet-name,.drop-info>strong){min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* Restrained light follows important controls, rather than every panel. */
+:root{--ui-glow:#79c5f5;--action-glow:#79c5f5}
+:root[data-theme=halloween]{--ui-glow:#ba70ef;--action-glow:#f2c95e}
+body .btn:not(.secondary):not(.danger){box-shadow:inset 0 1px #ffffff35,0 4px 16px color-mix(in srgb,var(--action-glow) 16%,transparent);transition:box-shadow .2s,filter .2s}
+@media(hover:hover){body .btn:not(.secondary):not(.danger):hover{box-shadow:inset 0 1px #ffffff50,0 5px 24px color-mix(in srgb,var(--action-glow) 28%,transparent)}body .case-card:hover{box-shadow:0 5px 24px color-mix(in srgb,var(--accent) 12%,transparent)}}
+body .pet.selected{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ui-glow) 50%,transparent),0 0 16px color-mix(in srgb,var(--ui-glow) 13%,transparent)}
+body .home-dashboard .home-best{box-shadow:inset 0 1px #ffe3a92b,0 0 24px #e8b8490c,0 5px 20px #0002}
+@media(prefers-reduced-motion:reduce){body .btn{transition:none}}

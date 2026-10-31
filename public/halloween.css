@@ -1,0 +1,99 @@
+/* Seasonal palette loaded last; rarity and game result colors remain semantic. */
+:root[data-theme=halloween]{--lime:#f5cc52;--panel:#21152f;--bg:#100b18;--text:#eee5fa;--muted:#ac96bf;color-scheme:dark}
+:root[data-theme=halloween] body{background:radial-gradient(ellipse at 5% 0,#55277b30,transparent 65%),radial-gradient(ellipse at 100% 70%,#72461914,transparent 65%),#100b18;color:#eee5fa}
+:root[data-theme=halloween] :is(header,.sidebar,.mobile-nav,.upgrade-mobile-tabs){background:#1a1025f2;border-color:#9f74c52c}
+:root[data-theme=halloween] :is(.panel,.stat-card,.case-card,.dialog,.upgrade-console,.upgrade-list,.ref-link-panel,.ref-balance-panel,.ref-level,.drop-card){background:linear-gradient(145deg,#30203bea,#1b1228f5);border-color:#b58bd52b;color:#eee5fa}
+:root[data-theme=halloween] :is(input,select,.slot,.selected-box,.search,.chip,.theme-option,.toggle-switch,.close,.btn.secondary,.upgrade-mobile-tabs button){background:#281a37;border-color:#af86cd33;color:#cbb4e1;accent-color:#f5cc52}
+:root[data-theme=halloween] :is(.btn:not(.secondary):not(.danger),.coin,.balance-plus,.brand-mark){background:linear-gradient(135deg,#ffe38b,#e4b934);color:#302015;border-color:#ffdf7e66}
+:root[data-theme=halloween] :is(.nav-item.active,.mobile-nav button.active,.chip.active,.chip.selected,.theme-option.selected,.upgrade-mobile-tabs button.active){color:#ffda70;border-color:#f5cc5260;background:#e1b53d14}
+:root[data-theme=halloween] .nav-item.active{box-shadow:inset 2px 0 #f5cc52}
+:root[data-theme=halloween] :is(.subtle,.muted-small,.tiny-neutral,.label,.drop-info small,.stat-card span,.site-stats-grid span,.fast-spin,.upgrade-boost>label,.drop-chance,table th){color:#a991bc}
+:root[data-theme=halloween] :is(.drop-info>strong,.site-stats-grid strong,.ref-code,.ref-big,.profile-balance strong,.ring-content strong){color:#eee0ff}
+:root[data-theme=halloween] :is(.drop-info>span,.promo-banner-code>span,.promo-banner-code>strong,.case-opening-price,.price,.ref-rates strong,.ref-level b,.quick-chances .chip:hover){color:#f5d06d}
+:root[data-theme=halloween] :is(.promo-banner,.notice,.wallet-schedule,.ref-formula,.ref-extra-stats>span){background:linear-gradient(120deg,#392449,#25172f);border-color:#ba91dd35;color:#cdb5e1}
+:root[data-theme=halloween] .upgrade-ring{background:#160e22;box-shadow:0 0 0 1px #a878cc55}
+:root[data-theme=halloween] .upgrade-ring .wheel-surface{background:#1c122a}
+:root[data-theme=halloween] .upgrade-ring .wheel-liquid{background:linear-gradient(to top,#653491,#9155bc 55%,#c28be9 100%)}
+:root[data-theme=halloween] .upgrade-ring.result-win .wheel-liquid{background:linear-gradient(to top,#795019,#bf913c 55%,#f5ce69)}
+:root[data-theme=halloween] .upgrade-ring.result-lose .wheel-liquid{background:linear-gradient(to top,#442259,#674079 55%,#92659f)}
+:root[data-theme=halloween] :is(.upgrade-pointer i,.reel-marker:before,.reel-marker:after){background:#ffdb73;color:#ffdb73}
+:root[data-theme=halloween] :is(.reel-window,.case-dialog .reel-window){background:#140d20;border-color:#ab7bc740}
+:root[data-theme=halloween] .case-dialog .reel-window:before{background:linear-gradient(90deg,#140d20fa,transparent 19%,transparent 81%,#140d20fa)}
+:root[data-theme=halloween] .case-dialog .reel .reel-pet{background:linear-gradient(145deg,#382344,#21152e);border-color:#ac7ac62a;border-bottom-color:var(--accent)}
+:root[data-theme=halloween] .tile{background:linear-gradient(145deg,#3f2851,#291a38);border-color:#b385d43b;box-shadow:inset 0 -5px #170e23}
+:root[data-theme=halloween] .crash-stage{background:radial-gradient(ellipse at 60% 25%,#793f9b25,transparent 65%),#160e22}
+:root[data-theme=halloween] .rocket{color:#ffda70}
+:root[data-theme=halloween] .toast:not(.error){background:linear-gradient(140deg,#412953,#241630);border-color:#bc8ddb55;color:#f2e5ff}
+:root[data-theme=halloween] .toast:not(.error):before{background:#f5cc52}
+:root[data-theme=halloween] :is(button,a):focus-visible{outline-color:#ffda70}
+.halloween-decor{display:none;pointer-events:none;position:fixed;inset:0;z-index:45;overflow:hidden}
+:root[data-theme=halloween] .halloween-decor{display:block}
+.web{position:absolute;top:0;width:140px;height:140px;opacity:.27;background:repeating-radial-gradient(circle at 0 0,transparent 0 24px,#cfb3ec 25px 26px,transparent 27px 29px);clip-path:polygon(0 0,100% 0,87% 20%,72% 27%,65% 44%,48% 49%,41% 67%,23% 75%,18% 91%,0 100%)}
+.web:after{content:"";position:absolute;inset:0;background:repeating-conic-gradient(from 0deg at 0 0,transparent 0deg 17deg,#cfb3ec 18deg 19deg,transparent 20deg 30deg)}
+.web-left{left:0}.web-right{right:0;transform:scaleX(-1)}
+.spider{position:absolute;top:125px;width:15px;height:21px;border-radius:50%;background:#c09bd8;opacity:.65;box-shadow:0 -8px 0 -3px #c09bd8}
+.spider:before{content:"";position:absolute;width:1px;height:150px;bottom:22px;left:7px;background:#b08ccb66}
+.spider:after{content:"";position:absolute;inset:-5px -10px;background:linear-gradient(30deg,transparent 43%,#b08ccb 45% 48%,transparent 50%),linear-gradient(-30deg,transparent 43%,#b08ccb 45% 48%,transparent 50%),linear-gradient(65deg,transparent 43%,#b08ccb 45% 48%,transparent 50%),linear-gradient(-65deg,transparent 43%,#b08ccb 45% 48%,transparent 50%);z-index:-1}
+.spider-left{left:18px}.spider-right{right:24px;top:185px}
+.pumpkin{position:absolute;bottom:18px;width:48px;height:39px;border-radius:45%;background:repeating-radial-gradient(ellipse at center,#eda643 0 8px,#c87927 9px 11px,#eda643 12px 17px);box-shadow:0 5px 20px #0005;opacity:.7}
+.pumpkin:before{content:"";position:absolute;width:7px;height:10px;top:-7px;left:22px;background:#82905b;border-radius:3px;transform:rotate(15deg)}
+.pumpkin:after{content:"";position:absolute;inset:10px 9px 6px;background:#39203d;clip-path:polygon(8% 30%,25% 0,37% 35%,8% 30%,65% 35%,77% 0,95% 30%,65% 35%,10% 64%,33% 76%,45% 63%,61% 76%,84% 64%,70% 100%,31% 100%)}
+.pumpkin-left{left:16px}.pumpkin-right{right:16px;transform:rotate(8deg)}
+@media(max-width:650px){.web{width:80px;height:80px;opacity:.18}.spider-left{top:100px;left:5px;transform:scale(.7)}.spider-right{display:none}.pumpkin{bottom:82px;width:33px;height:28px;opacity:.4}.pumpkin-left{left:5px}.pumpkin-right{right:5px}.pumpkin:before{left:15px}}
+/* Cleaner dial: one uninterrupted field, precise rim and compact pointer. */
+:root{--dial-edge:#59758a;--dial-pointer:#d9efff;--dial-low:#244962;--dial-high:#78adcd}
+:root[data-theme=halloween]{--dial-edge:#795299;--dial-pointer:#ffdc70;--dial-low:#502a75;--dial-high:#bd83e3}
+.upgrade-console .upgrade-ring{border:1px solid var(--dial-edge);box-shadow:0 0 0 5px #0b0d1480,0 0 0 6px color-mix(in srgb,var(--dial-edge) 35%,transparent),0 16px 32px #0003;background:#11141d;overflow:visible}
+.upgrade-console .upgrade-ring:before{display:none}
+.upgrade-console .upgrade-ring .wheel-surface{background:#10121b;border-radius:50%;box-shadow:none}
+.upgrade-console .upgrade-ring .wheel-liquid{background:linear-gradient(0deg,var(--dial-low),color-mix(in srgb,var(--dial-low),var(--dial-high) 55%) 60%,var(--dial-high));box-shadow:none}
+.upgrade-console .upgrade-ring .ring-content{display:flex;flex-direction:column;align-items:center;gap:7px;position:relative;text-shadow:0 2px 5px #0006;transform:none;filter:none}
+.upgrade-console .upgrade-ring .ring-content strong{font-size:clamp(42px,4.2vw,60px);font-weight:650;line-height:1;letter-spacing:-2.5px;font-variant-numeric:tabular-nums;color:#fff}
+.upgrade-console .upgrade-ring .ring-content strong small{font-size:.45em;letter-spacing:-.5px;margin-left:3px;color:#ffffffa6}
+.upgrade-console .upgrade-ring .ring-content p{margin:0;color:#e3dcf0b3;font-size:10px;font-weight:500;letter-spacing:1.4px;text-transform:uppercase}
+.upgrade-console .upgrade-ring .upgrade-pointer{inset:-16px}
+.upgrade-console .upgrade-ring .upgrade-pointer i{width:12px;height:19px;left:calc(50% - 6px);top:0;background:var(--dial-pointer);clip-path:polygon(0 0,100% 0,100% 38%,50% 100%,0 38%);filter:drop-shadow(0 2px 3px #0007)}
+.upgrade-console .pointer-trail span:before{background:var(--dial-pointer);box-shadow:none;width:3px;height:3px;left:calc(50% - 1.5px);top:2px}
+.upgrade-console .upgrade-slot{border-radius:14px;box-shadow:none}
+.upgrade-console .quick-chances{gap:8px}
+.upgrade-console .quick-chances .chip{min-height:35px;border-radius:8px;font-variant-numeric:tabular-nums;font-weight:600}
+.upgrade-console #upgradeGo{min-height:46px;border-radius:10px;font-weight:650;letter-spacing:.15px;box-shadow:0 3px 9px #0002}
+.upgrade-console .upgrade-ring.result-win .wheel-liquid{background:linear-gradient(0deg,#655025,#c5a15d 65%,#ebd28a)}
+.upgrade-console .upgrade-ring.result-lose .wheel-liquid{background:linear-gradient(0deg,#322b3b,#645574 65%,#90829d)}
+@media(max-width:580px){.upgrade-console .upgrade-ring .ring-content strong{font-size:48px}.upgrade-console .upgrade-ring .ring-content p{font-size:9px;letter-spacing:1px}}
+@media(max-height:720px) and (max-width:580px){.upgrade-console .upgrade-ring .ring-content strong{font-size:38px}}
+/* Compact home dashboard; the daily record owns the gold treatment. */
+.home-dashboard{display:grid;grid-template-columns:minmax(230px,.8fr) minmax(0,2fr);grid-template-rows:auto auto;gap:10px;margin-bottom:22px;min-width:0}
+.home-dashboard .home-drops{display:contents}
+.home-dashboard .home-best{grid-column:1;grid-row:1/3;position:relative;min-width:0;padding:17px 18px!important;overflow:hidden;background:radial-gradient(ellipse at 0 0,#e9bb4d14,transparent 70%),linear-gradient(135deg,#302a21,#19171b)!important;border:1px solid #c9a35770!important;box-shadow:inset 0 1px #ffe3a91f,0 5px 20px #0002}
+.home-dashboard .home-best:after{content:'';position:absolute;inset:5px;border:1px solid #e8be5b13;border-radius:inherit;pointer-events:none}
+.home-dashboard .home-best .panel-heading{margin:0 0 9px}
+.home-dashboard .home-best h3{display:flex;align-items:center;gap:7px;font-size:11px;color:#edce8a;font-weight:600;white-space:nowrap}
+.home-best h3>span{font-size:9px;letter-spacing:.4px;color:#ba9b66;margin-left:auto}
+.royal-crown{width:23px;height:21px;fill:#e6bc59;stroke:#ffe0a0;stroke-width:1.2;flex-shrink:0}
+.home-dashboard .home-best .best-drop{padding:0;border:0;background:none!important;min-height:76px;gap:12px;max-width:none}
+.home-dashboard .home-best .drop-art{width:78px;height:78px;flex-shrink:0;filter:drop-shadow(0 4px 9px #e8b84922)}
+.home-dashboard .home-best .drop-info>strong{font-size:13px;color:#fff1d3}
+.home-dashboard .home-best .drop-info>span{font-size:21px;color:#f2cd78;margin:6px 0}
+.home-dashboard .home-best .drop-info small{color:#a9987a;font-size:9px}
+.home-dashboard .home-best .drop-empty{min-height:76px;font-size:11px;color:#b8a47c}
+.home-dashboard .home-recent{grid-column:2;grid-row:1;padding:11px 14px!important;min-width:0}
+.home-dashboard .home-recent .panel-heading{margin:0 0 8px}
+.home-dashboard .home-recent h3{font-size:10px;font-weight:500}
+.home-dashboard .recent-strip{gap:7px;padding-bottom:2px}
+.home-dashboard .recent-strip .drop-card{min-width:150px;max-width:210px;padding:5px 8px;gap:7px;border-radius:8px;min-height:48px}
+.home-dashboard .recent-strip .drop-art{width:38px;height:38px;flex-shrink:0}
+.home-dashboard .recent-strip .drop-info>strong{font-size:10px}
+.home-dashboard .recent-strip .drop-info>span{font-size:11px;margin:3px 0}
+.home-dashboard .recent-strip .drop-info small{font-size:8px}
+.home-dashboard .home-recent .drop-empty{min-height:48px;font-size:10px}
+.home-dashboard .promo-banner{grid-column:2;grid-row:2;padding:10px 14px;gap:12px;border-radius:12px;min-width:0;align-items:center;flex-direction:row}
+.home-dashboard .promo-banner-label h2{font-size:11px;margin:0 0 4px;letter-spacing:0;white-space:nowrap}
+.home-dashboard .promo-banner-label small{font-size:9px;white-space:nowrap}
+.home-dashboard .promo-banner-code{gap:10px;flex-wrap:nowrap;min-width:0}
+.home-dashboard .promo-banner-code>strong{font-size:14px;letter-spacing:.7px}
+.home-dashboard .promo-banner-code>span{font-size:13px;padding:5px 7px;white-space:nowrap}
+.home-dashboard .promo-banner-code .btn{padding:7px 9px;min-height:30px;font-size:10px}
+.home-dashboard+.cases-scroll{display:none}
+@media(max-width:850px){.home-dashboard{grid-template-columns:minmax(210px,.9fr) minmax(0,1.3fr)}.home-dashboard .promo-banner{flex-wrap:wrap;gap:8px}.home-dashboard .promo-banner-label{display:flex;align-items:center;gap:10px}.home-dashboard .promo-banner-label h2{margin:0}.home-dashboard .promo-banner-code{justify-content:space-between;width:100%}}
+@media(max-width:580px){.home-dashboard{grid-template-columns:minmax(0,1fr);gap:8px;margin-bottom:18px}.home-dashboard .home-best{grid-column:1;grid-row:1;padding:12px 14px!important}.home-dashboard .home-best .panel-heading{margin-bottom:5px}.home-dashboard .home-best .drop-art{width:60px;height:60px}.home-dashboard .home-best .best-drop,.home-dashboard .home-best .drop-empty{min-height:60px}.home-dashboard .home-best .drop-info>span{font-size:18px;margin:4px 0}.home-dashboard .home-best .drop-info>strong{font-size:12px}.home-dashboard .home-recent{grid-column:1;grid-row:2;padding:9px 12px!important}.home-dashboard .recent-strip .drop-card{min-width:143px}.home-dashboard .promo-banner{grid-column:1;grid-row:3;padding:10px 12px;flex-wrap:nowrap;gap:8px}.home-dashboard .promo-banner-label{display:block;flex-shrink:0}.home-dashboard .promo-banner-label h2{font-size:10px;margin-bottom:4px}.home-dashboard .promo-banner-label small{font-size:8px}.home-dashboard .promo-banner-code{width:auto;gap:7px}.home-dashboard .promo-banner-code>strong{font-size:12px;letter-spacing:.2px}.home-dashboard .promo-banner-code>span{font-size:11px;padding:4px}.home-dashboard .promo-banner-code .btn{font-size:0;gap:0;padding:7px;min-width:29px}.home-dashboard .promo-banner-code .btn .icon{width:14px;height:14px}}

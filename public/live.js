@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=n=>new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2}).format((n||0)/100),date=t=>new Date(t).toLocaleString('ru-RU',{timeZone:'Europe/Moscow',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-const tg=window.Telegram?.WebApp;tg?.ready();tg?.expand();let cfg={},s,admin,tab='cases',adminTab='operations',selected=new Set(),filter='',busy=false,serverOffset=0;
+const tg=window.parent!==window&&window.parent.Telegram?.WebApp?.initData?window.parent.Telegram.WebApp:window.Telegram?.WebApp;tg?.ready();tg?.expand();let cfg={},s,admin,tab=(location.hash.slice(1)||'cases'),adminTab='operations',selected=new Set(),filter='',busy=false,serverOffset=0;
 let lastDepositAlert='';
 let devId=sessionStorage.getItem('dev-id')||'8911524524';
 const item=id=>s.items.find(i=>i.id===id)||s.coinRewards?.find(i=>i.id===id),now=()=>Date.now()+serverOffset;

@@ -27,6 +27,19 @@ setInterval(()=>{const t=Date.now();for(const [k,v] of rates)if(v.until<t)rates.
 function json(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));}
 async function readBody(req){let raw='';for await(const part of req){raw+=part;check(Buffer.byteLength(raw)<=65536,'Слишком большой запрос');}return raw?JSON.parse(raw):{};}
 function authenticated(req){const raw=req.headers.authorization?.replace(/^tma /,'');if(dev&&req.headers['x-dev-user']){const id=Number(req.headers['x-dev-user']);integer(id);return {id,first_name:id===adminId?'Владелец (локально)':'Игрок (локально)',last_name:'@Brainrot_Rush_bot'};}return validateInitData(raw,token);}
+
+function userSummary(id){
+ const counts=Object.fromEntries(all('SELECT kind,COUNT(*) n FROM games WHERE user_id=? GROUP BY kind',id).map(r=>[r.kind,r.n]));
+ counts.case=get("SELECT COALESCE(SUM(json_array_length(json_extract(state,'$.prizes'))),0) n FROM games WHERE user_id=? AND kind='case'",id).n;
+ const drops=[];
+ for(const g of all('SELECT state,kind,closed FROM games WHERE user_id=? AND closed IS NOT NULL ORDER BY closed DESC LIMIT 1000',id)){
+  const data=JSON.parse(g.state),prizes=data.prizes||[data.prize].filter(Boolean);
+  for(const p of prizes){const item=p.item_id?get('SELECT * FROM items WHERE id=?',p.item_id):null;drops.push({id:g.closed+':'+drops.length,item:item?.id||null,name:item?.name||String((p.coin||0)/100)+' монет',source:{case:'Кейс',upgrade:'Апгрейд',dice:'Дайсы'}[g.kind]||g.kind,quantity:1,value:(item?.price||p.coin||0)/100,at:g.closed});}
+ }
+ const withdrawnValue=get("SELECT COALESCE(SUM(i.price),0) n FROM inventory v JOIN items i ON i.id=v.item_id WHERE v.user_id=? AND v.status='withdrawn'",id).n;
+ return {counts,drops,withdrawnValue};
+}
+
 const server=http.createServer(async(req,res)=>{
  res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');
  try{
@@ -37,7 +50,7 @@ const server=http.createServer(async(req,res)=>{
    rate('ip:'+req.socket.remoteAddress,600);
    const tg=authenticated(req);rate('user:'+tg.id,240);e.login(tg);const admin=tg.id===adminId;
    if(p.startsWith('/api/admin/'))check(admin,'Доступ только владельцу');
-   if(req.method==='GET'&&p==='/api/state'){json(res,200,{...tx(()=>e.snapshot(tg.id)),admin});return;}
+   if(req.method==='GET'&&p==='/api/state'){json(res,200,{...tx(()=>({...e.snapshot(tg.id),...userSummary(tg.id)})),admin});return;}
    if(req.method==='GET'&&p==='/api/admin/state'){json(res,200,tx(()=>({...e.adminSnapshot(),invoices:all('SELECT * FROM invoices ORDER BY created DESC LIMIT 200')})));return;}
    check(req.method==='POST','Метод не поддерживается');
    const body=await readBody(req),key=req.headers['idempotency-key'];
