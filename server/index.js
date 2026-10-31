@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {createMaintenance} from './maintenance.js';
 import {gzipSync} from 'node:zlib';
 import {createFairness} from './fairness.js';
 import {createStats} from './stats.js';
@@ -17,6 +18,7 @@ if(!dev&&!token)throw new Error('Укажи BOT_TOKEN в переменных о
 const store=openStore(process.env.DATABASE_PATH||'./data/brainrot.db');
 async function telegram(method,body){check(token,'Telegram не подключён');const response=await fetch(`https://api.telegram.org/bot${token}/${method}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(method==='getUpdates'?35000:12000)});const data=await response.json();check(data.ok,data.description||'Ошибка Telegram');return data.result;}
 const e=createEngine(store,{telegram}),{get,all,run,tx,set,setting}=store;
+const maintenance=createMaintenance(store);
 const fairness=createFairness(store,e),stats=createStats(store),bootId=randomUUID(),avatarCache=new Map(),staticCache=new Map();
 const routes={
  '/api/sell':e.sell,'/api/buy':e.buy,'/api/exchange':e.exchange,'/api/case':e.openCase,'/api/upgrade':e.upgrade,'/api/dice':e.dice,
@@ -39,13 +41,13 @@ const server=http.createServer(async(req,res)=>{
  try{
   const url=new URL(req.url,'http://localhost'),p=url.pathname;
   if(p==='/health'){json(res,200,{ok:true});return;}
-  if(p==='/api/config'){json(res,200,{dev,botUsername:process.env.BOT_USERNAME||'Brainrot_Rush_bot',channel:'https://t.me/BrainrotRushNews'});return;}
+  if(p==='/api/config'){json(res,200,{dev,botUsername:process.env.BOT_USERNAME||'Brainrot_Rush_bot',channel:'https://t.me/BrainrotRushNews',maintenance:maintenance.read()});return;}
   if(p.startsWith('/api/')){
    rate('ip:'+req.socket.remoteAddress,600);
    const tg=authenticated(req);rate('user:'+tg.id,240);e.login(tg);const admin=tg.id===adminId;
    if(p.startsWith('/api/admin/'))check(admin,'Доступ только владельцу');
    if(req.method==='GET'&&p==='/api/state'){
-    const response=tx(()=>{e.tick();const revision=bootId+':'+get('SELECT total_changes() n').n+':'+Math.floor(Date.now()/60000);if(url.searchParams.get('revision')===revision)return {unchanged:true,serverTime:Date.now()};return {...e.snapshot(tg.id),...userSummary(tg.id),admin,revision};});json(res,200,response);return;
+    const response=tx(()=>{e.tick();const revision=bootId+':'+get('SELECT total_changes() n').n+':'+Math.floor(Date.now()/60000);if(url.searchParams.get('revision')===revision)return {unchanged:true,serverTime:Date.now()};return {...e.snapshot(tg.id),...userSummary(tg.id),maintenance:maintenance.read(),admin,revision};});json(res,200,response);return;
    }
    if(req.method==='GET'&&p==='/api/avatar'){
     let cached=avatarCache.get(tg.id);if(!cached||cached.until<Date.now()){
@@ -59,6 +61,8 @@ const server=http.createServer(async(req,res)=>{
    const signature=createHash('sha256').update(p+JSON.stringify(body)).digest('hex');
    const cached=get('SELECT * FROM requests WHERE user_id=? AND key=?',tg.id,key);
    if(cached){check(cached.path===signature,'Ключ уже использован для другой операции');json(res,200,JSON.parse(cached.response));return;}
+   if(p==='/api/admin/maintenance'){const response=tx(()=>{const value=maintenance.update(tg.id,body);run('INSERT INTO requests VALUES(?,?,?,?,?)',tg.id,key,signature,JSON.stringify(value),Date.now());return value;});json(res,200,response);return;}
+   if(!maintenance.allows(p,admin)){json(res,503,{error:maintenance.read().message,maintenance:maintenance.read()});return;}
    if(p==='/api/fairness/commit'){const result=tx(()=>fairness.commit(tg.id,body.clientSeed));json(res,200,result);return;}
    if(p==='/api/case'){const c=get('SELECT data FROM cases WHERE id=?',body.caseId);check(c,'Кейс не найден');await e.freeCheck(tg.id,JSON.parse(c.data),tg);}
    if(p==='/api/admin/refund'){
@@ -74,7 +78,7 @@ const server=http.createServer(async(req,res)=>{
     const response={link};run('INSERT INTO requests VALUES(?,?,?,?,?)',tg.id,key,signature,JSON.stringify(response),Date.now());json(res,200,response);return;
    }
    const handler=routes[p];check(handler,'Операция не найдена');
-   const response=tx(()=>{check(!get('SELECT blocked FROM users WHERE id=?',tg.id).blocked,'Аккаунт заблокирован');e.tick();const value=fairness.execute(tg.id,p,body,()=>handler(tg.id,body));run('INSERT INTO requests VALUES(?,?,?,?,?)',tg.id,key,signature,JSON.stringify(value),Date.now());return value;});json(res,200,response);return;
+   const response=tx(()=>{check(!get('SELECT blocked FROM users WHERE id=?',tg.id).blocked,'Аккаунт заблокирован');check(maintenance.allows(p,admin),maintenance.read().message);e.tick();const value=fairness.execute(tg.id,p,body,()=>handler(tg.id,body));run('INSERT INTO requests VALUES(?,?,?,?,?)',tg.id,key,signature,JSON.stringify(value),Date.now());return value;});json(res,200,response);return;
   }
   check(req.method==='GET'||req.method==='HEAD','Метод не поддерживается');
   const file=path.resolve(root,'.'+decodeURIComponent(p==='/'?'/index.html':p));check(file.startsWith(root+path.sep),'Недоступный путь');
@@ -91,7 +95,7 @@ server.listen(port,dev?'127.0.0.1':'0.0.0.0',()=>console.log(`Brainrot Rush: п�
 setInterval(()=>{try{tx(()=>e.tick());}catch(err){console.error('Scheduler:',err.message);}},1000).unref();
 let stopped=false;
 async function onUpdate(u){
- if(u.pre_checkout_query){const q=u.pre_checkout_query,i=get('SELECT * FROM invoices WHERE id=?',q.invoice_payload),ok=!!i&&i.status==='pending'&&i.user_id===q.from.id&&i.stars===q.total_amount&&q.currency==='XTR';await telegram('answerPreCheckoutQuery',{pre_checkout_query_id:q.id,ok,...(!ok?{error_message:'Счёт недоступен. Создай новый в приложении.'}:{})});}
+ if(u.pre_checkout_query){const q=u.pre_checkout_query,i=get('SELECT * FROM invoices WHERE id=?',q.invoice_payload),ok=!maintenance.read().enabled&&!!i&&i.status==='pending'&&i.user_id===q.from.id&&i.stars===q.total_amount&&q.currency==='XTR';await telegram('answerPreCheckoutQuery',{pre_checkout_query_id:q.id,ok,...(!ok?{error_message:'Счёт недоступен. Создай новый в приложении.'}:{})});}
  const m=u.message;if(!m)return;
  if(m.successful_payment){const p=m.successful_payment;tx(()=>{const i=get('SELECT * FROM invoices WHERE id=?',p.invoice_payload);check(i&&i.user_id===m.from.id&&i.stars===p.total_amount&&p.currency==='XTR','Несовпадение платежа');if(i.status==='paid')return;check(i.status==='pending','Счёт уже закрыт');run("UPDATE invoices SET status='paid',charge=? WHERE id=?",p.telegram_payment_charge_id,i.id);e.balance(i.user_id,i.coins,'deposit_stars',{invoice:i.id,charge:p.telegram_payment_charge_id});e.notify(i.user_id,`Зачислено ${i.coins/100} монет.`);});}
  if(m.text?.startsWith('/start')){const arg=m.text.split(/\s+/)[1]||'';tx(()=>e.login({...m.from,start_param:arg}));await telegram('sendMessage',{chat_id:m.chat.id,text:'Brainrot Rush — кейсы и коллекция. Открывай приложение 👇',reply_markup:{inline_keyboard:[[{text:'Открыть Brainrot Rush',web_app:{url:process.env.PUBLIC_URL}}]]}});}
