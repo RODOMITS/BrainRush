@@ -1,0 +1,6 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {openStore} from '../server/db.js';
+import {createEngine} from '../server/engine.js';
+import {depositQueueStatus} from '../server/deposit-queue.js';
+test('Players see their own queue position; the active trade always precedes queued entries',()=>{const store=openStore(':memory:');let time=Date.now();const e=createEngine(store,{clock:()=>time});for(let i=1;i<=3;i++)e.login({id:i,first_name:'Игрок '+i});const item=store.get('SELECT id FROM items WHERE deposit=1 LIMIT 1');store.tx(()=>e.depositSession(99,{open:true,nick:'Receiver'}));for(let i=1;i<=3;i++){time++;store.tx(()=>e.joinDeposit(i,{nick:'Player'+i,items:[{id:item.id,quantity:1}]}));}assert.equal(depositQueueStatus(store,1).position,1);assert.equal(depositQueueStatus(store,1).status,'active');assert.equal(depositQueueStatus(store,2).ahead,1);assert.equal(depositQueueStatus(store,3).position,3);const first=depositQueueStatus(store,1);store.tx(()=>e.confirmDeposit(99,{id:first.id}));assert.equal(depositQueueStatus(store,1),null);assert.equal(depositQueueStatus(store,2).status,'active');assert.equal(depositQueueStatus(store,3).position,2);store.tx(()=>e.depositSession(99,{open:false}));assert.equal(depositQueueStatus(store,3),null);store.db.close();});

@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {depositQueueStatus} from './deposit-queue.js';
 import {createGiveaway} from './giveaway.js';
 import {createMaintenance} from './maintenance.js';
 import {gzipSync} from 'node:zlib';
@@ -49,7 +50,7 @@ const server=http.createServer(async(req,res)=>{
    const tg=authenticated(req);rate('user:'+tg.id,240);e.login(tg);const admin=tg.id===adminId;
    if(p.startsWith('/api/admin/'))check(admin,'Доступ только владельцу');
    if(req.method==='GET'&&p==='/api/state'){
-    const response=tx(()=>{e.tick();giveaways.tick();const revision=bootId+':'+get('SELECT total_changes() n').n+':'+Math.floor(Date.now()/60000);if(url.searchParams.get('revision')===revision)return {unchanged:true,serverTime:Date.now()};return {...e.snapshot(tg.id),...userSummary(tg.id),giveaway:giveaways.snapshot(tg.id),maintenance:maintenance.read(),admin,revision};});json(res,200,response);return;
+    const response=tx(()=>{e.tick();giveaways.tick();const revision=bootId+':'+get('SELECT total_changes() n').n+':'+Math.floor(Date.now()/60000);if(url.searchParams.get('revision')===revision)return {unchanged:true,serverTime:Date.now()};return {...e.snapshot(tg.id),...userSummary(tg.id),giveaway:giveaways.snapshot(tg.id),depositQueue:depositQueueStatus(store,tg.id),maintenance:maintenance.read(),admin,revision};});json(res,200,response);return;
    }
    if(req.method==='GET'&&p==='/api/avatar'){
     let cached=avatarCache.get(tg.id);if(!cached||cached.until<Date.now()){
